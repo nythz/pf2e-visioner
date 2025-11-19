@@ -42,6 +42,11 @@ export class ExclusionManager {
                 /* ignore */
             }
 
+            // Skip Multilevel-tokens cloned tokens
+            if (this._isMultilevelToken(token)) {
+                return true;
+            }
+            
             // Note: Do not exclude based on sneak-active or viewport visibility; 
             // AVS must still process them for awareness and override validation
 
@@ -275,6 +280,21 @@ export class ExclusionManager {
                     return false;
                 }
             });
+        } catch {
+            return false;
+        }
+    }
+    /**
+     * Check if token has Multilevel-tokens flags
+     * @param {Object} token - Token to check
+     * @returns {boolean} True if token has Multilevel-tokens flags
+     */
+    _isMultilevelToken(token) {
+        try {
+            if (token.document.flags?.['multilevel-tokens']) {
+                return true;
+            }
+            return false;
         } catch {
             return false;
         }
