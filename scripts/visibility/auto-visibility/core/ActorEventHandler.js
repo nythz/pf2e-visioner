@@ -25,7 +25,7 @@ export class ActorEventHandler {
   /**
    * Handle actor about to be updated - catch condition changes early
    */
-  handlePreUpdateActor(actor, changes) {
+  handlePreUpdateActor(actor, changes, options) {
     // ALWAYS log what we receive to debug sheet open/close issue
     this.systemState.debug(() => ({
       msg: 'ActorEventHandler:handlePreUpdateActor CALLED',
@@ -35,7 +35,7 @@ export class ActorEventHandler {
       changesKeys: changes ? Object.keys(changes) : null,
       changesJson: changes ? JSON.stringify(changes) : null
     }));
-
+    
     if (!this.systemState.shouldProcessEvents()) {
       this.systemState.debug(() => ({
         msg: 'ActorEventHandler:handlePreUpdateActor skipped - shouldProcessEvents=false',
@@ -43,7 +43,7 @@ export class ActorEventHandler {
       }));
       return;
     }
-
+  
     // Ignore changes when we're updating effects to prevent feedback loops
     if (this.systemState.isUpdatingEffects()) {
       this.systemState.debug(() => ({
@@ -52,7 +52,14 @@ export class ActorEventHandler {
       }));
       return;
     }
-
+    // Prevent feedback loop with Multilevel-token 
+    if (options?.mlt_bypass) {
+        this.systemState.debug(() => ({
+            msg: 'ActorEventHandler:handlePreUpdateActor skipped - MLT bypass flag set',
+            actorId: actor.id,
+        }));
+        return;
+    }
     // Use the same filtering as handleActorUpdate to avoid processing non-relevant changes
     if (!this._hasVisibilityRelevantChanges(actor, changes)) {
       this.systemState.debug(() => ({
@@ -61,7 +68,7 @@ export class ActorEventHandler {
       }));
       return;
     }
-
+   
     this.systemState.debug(() => ({
       msg: 'ActorEventHandler:handlePreUpdateActor processing - has visibility-relevant changes',
       actorId: actor.id,
@@ -103,7 +110,7 @@ export class ActorEventHandler {
   /**
    * Handle actor updated - might affect vision capabilities or conditions
    */
-  handleActorUpdate(actor, changes) {
+  handleActorUpdate(actor, changes, options) {
     // ALWAYS log what we receive to debug sheet open/close issue
     this.systemState.debug(() => ({
       msg: 'ActorEventHandler:handleActorUpdate CALLED',
@@ -130,7 +137,14 @@ export class ActorEventHandler {
       }));
       return;
     }
-
+    // Prevent feedback loop with Multilevel-token 
+    if (options?.mlt_bypass) {
+        this.systemState.debug(() => ({
+            msg: 'ActorEventHandler:handleActorUpdate skipped - MLT bypass flag set',
+            actorId: actor.id,
+        }));
+        return; // Exit immediately
+    }
     // OPTIMIZATION: Only process if there are visibility-relevant changes
     // Opening/closing sheets triggers updateActor with no meaningful changes
     if (changes && !this._hasVisibilityRelevantChanges(actor, changes)) {
